@@ -1,0 +1,14 @@
+.navbar-link {
+    color: black; /* Atur warna dasar */
+    cursor: pointer; /* Mengubah kursor menjadi tangan */
+    text-decoration: none; /* Hapus garis bawah jika diperlukan */
+}
+
+.navbar-link:hover {
+    color: black; /* Warna saat hover */
+}
+
+.active {
+    color: black; /* Warna item aktif */
+    font-weight: bold; /* Menebalkan teks item aktif */
+}
