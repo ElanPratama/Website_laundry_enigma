@@ -1,115 +1,231 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate dari react-router-dom
+import { useNavigate } from 'react-router-dom';
+import { axiosInstance } from '../lib/axios';
+import { user } from '@nextui-org/react';
 
 function Admin() {
     const [userData, setUserData] = useState([]);
     const [productData, setProductData] = useState([]);
     const [transactionData, setTransactionData] = useState([]);
-    const [activeTab, setActiveTab] = useState('customers'); // Tab aktif default
-    const [showCreateCustomerForm, setShowCreateCustomerForm] = useState(false); // State untuk menampilkan form create customer
-    const [showCreateProductForm, setShowCreateProductForm] = useState(false); // State untuk menampilkan form add product
-    const [showCreateTransactionForm, setShowCreateTransactionForm] = useState(false); // State untuk menampilkan form add transaction
-    const navigate = useNavigate(); // Inisialisasi useNavigate
+    const [activeTab, setActiveTab] = useState('customers');
+    const [showCreateCustomerForm, setShowCreateCustomerForm] = useState(false);
+    const [showCreateProductForm, setShowCreateProductForm] = useState(false);
+    const [showCreateTransactionForm, setShowCreateTransactionForm] = useState(false);
+    const [transactionProductId, setTransactionProductId] = useState('');
+    const [transactionQuantity, setTransactionQuantity] = useState('');
+    const [transactionCustomerId, setTransactionCustomerId] = useState('');
+    const [name, setName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [address, setAddress] = useState('');
+    const [productName, setProductName] = useState('');
+    const [productPrice, setProductPrice] = useState('');
+    const [productType, setProductType] = useState('');
+    const [responseMessage, setResponseMessage] = useState(null);
+    const navigate = useNavigate();
+    
 
-    useEffect(() => {
-        const token = localStorage.getItem("token");
-        const role = localStorage.getItem("role");
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
 
-        // Cek apakah token ada dan apakah role adalah 'admin'
-        if (!token || role !== 'admin') {
-            window.location.href = '/login'; // Ganti '/login' dengan path yang sesuai untuk halaman login Anda
-            return; // Menghentikan eksekusi lebih lanjut jika tidak ada token atau role tidak sesuai
+    // Fetch user data
+    const fetchUserData = async () => {
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            const { data } = await axiosInstance.get('/customers', { headers });
+            setUserData(data.data);
+        } catch (error) {
+            console.error('Error fetching user data:', error.response);
+        }
+    };
+
+    // Fetch product data
+    const fetchProductData = async () => {
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            const { data } = await axiosInstance.get('/products', { headers });
+            setProductData(data.data);
+        } catch (error) {
+            console.error('Error fetching product data:', error.response);
+        }
+    };
+
+    // Create a new product
+    const handleCreateProduct = async () => {
+        if (!productName || !productPrice || !productType) {
+            setResponseMessage('Please fill out all product fields.');
+            return;
         }
 
-        // Fetch user data
-        const fetchUserData = async () => {
-            const sampleUserData = [
-                { id: 1, name: 'User 1', phone: '123456789', address: 'Address 1' },
-                { id: 2, name: 'User 2', phone: '987654321', address: 'Address 2' },
-                { id: 3, name: 'User 3', phone: '456789123', address: 'Address 3' },
-            ];
-            setUserData(sampleUserData);
-        };
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            const response = await axiosInstance.post('/products', {
+                name: productName,
+                price: Number(productPrice),
+                type: productType,
+            }, { headers });
 
-        // Fetch product data
-        const fetchProductData = async () => {
-            const sampleProductData = [
-                { id: 1, name: 'Product 1', price: 100, type: 'Type A' },
-                { id: 2, name: 'Product 2', price: 200, type: 'Type B' },
-                { id: 3, name: 'Product 3', price: 300, type: 'Type C' },
-            ];
-            setProductData(sampleProductData);
-        };
+            if (response.status === 201) {
+                setResponseMessage('Product created successfully!');
+                setProductData(prevData => [...prevData, response.data.data]);
+                setProductName('');
+                setProductPrice('');
+                setProductType('');
+                setShowCreateProductForm(false);
+            }
+        } catch (error) {
+            console.error('Error creating product:', error.response);
+            setResponseMessage(`Failed to create product: ${error.response?.data?.message || error.message}`);
+        }
+    };
 
-        // Fetch transaction data
-        const fetchTransactionData = async () => {
-            const sampleTransactionData = [
-                { id: 1, customerCode: 'C001', customerName: 'User 1', transactionLabel: 'Transaction 1' },
-                { id: 2, customerCode: 'C002', customerName: 'User 2', transactionLabel: 'Transaction 2' },
-                { id: 3, customerCode: 'C003', customerName: 'User 3', transactionLabel: 'Transaction 3' },
-            ];
-            setTransactionData(sampleTransactionData);
-        };
+    // Fetch transaction data
+    const fetchTransactionData = async () => {
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            const { data } = await axiosInstance.get('/bills', { headers });
+            console.log(data.data)
+            setTransactionData(data.data);
+        } catch (error) {
+            console.error('Error fetching transaction data:', error.response);
+        }
+    };
+
+    // Component lifecycle hook
+    useEffect(() => {
+        if (!token || role !== 'admin') {
+            navigate('/login');
+            return;
+        }
 
         fetchUserData();
         fetchProductData();
         fetchTransactionData();
-    }, []);
+    }, [navigate, role, token]);
 
+    // Create a new customer
+    const handleCreateCustomer = async () => {
+        if (!name || !phoneNumber || !address) {
+            setResponseMessage('Please fill out all fields.');
+            return;
+        }
+
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            const response = await axiosInstance.post('/customers', { name, phoneNumber, address }, { headers });
+
+            if (response.status === 201) {
+                setResponseMessage('Customer created successfully!');
+                setUserData(prevData => [...prevData, response.data.data]);
+                setName('');
+                setPhoneNumber('');
+                setAddress('');
+                setShowCreateCustomerForm(false);
+            }
+        } catch (error) {
+            console.error('Error creating customer:', error.response);
+            setResponseMessage(`Failed to create customer: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    // Delete a customer
+    const handleDeleteCustomer = async (id) => {
+        try {
+            const headers = { Authorization: `Bearer ${token}` };
+            await axiosInstance.delete(`/customers/${id}`, { headers });
+            setUserData(prevData => prevData.filter(user => user.id !== id));
+            setResponseMessage('Customer deleted successfully.');
+        } catch (error) {
+            console.error('Error deleting customer:', error.response);
+        }
+    };
+
+    // Create a new transaction
+    
+    const handleCreateTransaction = async () => {
+        if (!transactionProductId || !transactionQuantity) {
+            setResponseMessage('Please fill out all transaction fields.');
+            return;
+        }
+
+        try {
+            const body =  {
+                customerId: transactionCustomerId,
+                billDetails:[
+                    {
+                        product : {
+                            id: transactionProductId,
+                        },
+                        qty: Number(transactionQuantity),                    
+                    }
+                ]
+            }
+
+
+            const headers = { Authorization: `Bearer ${token}` };
+            console.log(body)
+            const response = await axiosInstance.post('/bills', body , { headers });
+
+            if (response.status === 201) {
+                setResponseMessage('Transaction created successfully!');
+                setTransactionData(prevData => [...prevData, response.data.data]);
+                setTransactionProductId('');
+                setTransactionQuantity('');
+                setShowCreateTransactionForm(false);
+            }
+        } catch (error) {
+            console.error('Error creating transaction:', error.response);
+            setResponseMessage(`Failed to create transaction: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    // Navigate to transaction detail page
+    const handleTransactionDetail = (id) => {
+        navigate(`/transaction/${id}`);
+    };
+
+    // Logout function
     function handleLogout() {
-        console.log('Logging out...');
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        window.location.href = '/';  // Redirect ke halaman utama setelah logout
+        navigate('/');
     }
 
     return (
         <div className="min-h-screen flex">
-            {/* Sidebar */}
             <div className="w-64 bg-gray-800 text-white">
                 <div className="p-4">
                     <h2 className="text-2xl font-bold">Admin Dashboard</h2>
                 </div>
                 <ul className="mt-6">
-                    <li 
-                        className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'customers' ? 'bg-gray-600' : ''}`}
-                        onClick={() => setActiveTab('customers')}
-                    >
+                    <li className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'customers' ? 'bg-gray-600' : ''}`} onClick={() => setActiveTab('customers')}>
                         Customers
                     </li>
-                    <li 
-                        className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'products' ? 'bg-gray-600' : ''}`}
-                        onClick={() => setActiveTab('products')}
-                    >
+                    <li className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'products' ? 'bg-gray-600' : ''}`} onClick={() => setActiveTab('products')}>
                         Products
                     </li>
-                    <li 
-                        className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'transactions' ? 'bg-gray-600' : ''}`}
-                        onClick={() => setActiveTab('transactions')}
-                    >
+                    <li className={`p-4 hover:bg-gray-700 cursor-pointer ${activeTab === 'transactions' ? 'bg-gray-600' : ''}`} onClick={() => setActiveTab('transactions')}>
                         Transactions
                     </li>
                     <li className="p-4 hover:bg-gray-700 cursor-pointer" onClick={handleLogout}>Logout</li>
                 </ul>
             </div>
 
-            {/* Main Content */}
             <div className="flex-1 bg-gray-100 p-6">
                 <h1 className="text-3xl font-bold mb-6">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Data</h1>
 
-                {/* Tabel Data Pelanggan */}
+                {responseMessage && <p className="text-red-500">{responseMessage}</p>}
+
                 {activeTab === 'customers' && (
                     <div className="bg-white p-4 rounded-lg shadow mb-6">
                         <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateCustomerForm(true)}>Create Customer</button>
-                        
+
                         {showCreateCustomerForm && (
-                            <div className="mb-4 p-4 border rounded">
-                                <h3 className="text-lg font-semibold mb-2">Create Customer</h3>
-                                <input type="text" placeholder="Name" className="border p-2 mb-2 w-full" />
-                                <input type="text" placeholder="Phone" className="border p-2 mb-2 w-full" />
-                                <input type="text" placeholder="Address" className="border p-2 mb-2 w-full" />
-                                <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={() => {/* Logic to save customer */}}>Save</button>
-                                <button className="bg-red-500 text-white px-4 py-2 rounded ml-2" onClick={() => setShowCreateCustomerForm(false)}>Cancel</button>
+                            <div className="mb-4">
+                                <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <input type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateCustomer}>Submit</button>
+                                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateCustomerForm(false)}>Cancel</button>
                             </div>
                         )}
 
@@ -120,26 +236,26 @@ function Admin() {
                                     <th className="px-4 py-2 text-center">Name</th>
                                     <th className="px-4 py-2 text-center">Phone</th>
                                     <th className="px-4 py-2 text-center">Address</th>
-                                    <th className="px-4 py-2 text-center">Actions</th>
+                                    <th className="px-4 py-2 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {userData.length > 0 ? (
-                                    userData.map((item, index) => (
-                                        <tr key={item.id} className="border-b">
+                                    userData.map((user, index) => (
+                                        <tr key={user.id} className="border-b">
                                             <td className="px-4 py-2 text-center">{index + 1}</td>
-                                            <td className="px-4 py-2 text-center">{item.name}</td>
-                                            <td className="px-4 py-2 text-center">{item.phone}</td>
-                                            <td className="px-4 py-2 text-center">{item.address}</td>
+                                            <td className="px-4 py-2 text-center">{user.name}</td>
+                                            <td className="px-4 py-2 text-center">{user.phoneNumber}</td>
+                                            <td className="px-4 py-2 text-center">{user.address}</td>
                                             <td className="px-4 py-2 text-center">
                                                 <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
-                                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                                                <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => handleDeleteCustomer(user.id)}>Delete</button>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-4">No data available</td>
+                                        <td colSpan="5" className="px-4 py-2 text-center">No customers found</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -147,108 +263,157 @@ function Admin() {
                     </div>
                 )}
 
-                {/* Tabel Data Produk */}
-                {activeTab === 'products' && (
-                    <div className="bg-white p-4 rounded-lg shadow mb-6">
-                        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateProductForm(true)}>Add Product</button>
-                        
-                        {showCreateProductForm && (
-                            <div className="mb-4 p-4 border rounded">
-                                <h3 className="text-lg font-semibold mb-2">Add Product</h3>
-                                <input type="text" placeholder="Product Name" className="border p-2 mb-2 w-full" />
-                                <input type="number" placeholder="Price" className="border p-2 mb-2 w-full" />
-                                <input type="text" placeholder="Type" className="border p-2 mb-2 w-full" />
-                                <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={() => {/* Logic to save product */}}>Save</button>
-                                <button className="bg-red-500 text-white px-4 py-2 rounded ml-2" onClick={() => setShowCreateProductForm(false)}>Cancel</button>
-                            </div>
-                        )}
+{activeTab === 'products' && (
+    <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateProductForm(true)}>Create Product</button>
 
-                        <table className="w-full table-auto">
-                            <thead>
-                                <tr className="bg-gray-200">
-                                    <th className="px-4 py-2 text-center">#</th>
-                                    <th className="px-4 py-2 text-center">Name</th>
-                                    <th className="px-4 py-2 text-center">Price</th>
-                                    <th className="px-4 py-2 text-center">Type</th>
-                                    <th className="px-4 py-2 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {productData.length > 0 ? (
-                                    productData.map((item, index) => (
-                                        <tr key={item.id} className="border-b">
-                                            <td className="px-4 py-2 text-center">{index + 1}</td>
-                                            <td className="px-4 py-2 text-center">{item.name}</td>
-                                            <td className="px-4 py-2 text-center">Rp.{item.price}</td>
-                                            <td className="px-4 py-2 text-center">{item.type}</td>
-                                            <td className="px-4 py-2 text-center">
-                                                <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
-                                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="5" className="text-center py-4">No data available</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Tabel Data Transaksi */}
-                {activeTab === 'transactions' && (
-                    <div className="bg-white p-4 rounded-lg shadow">
-                        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateTransactionForm(true)}>Add Transaction</button>
-                        
-                        {showCreateTransactionForm && (
-                            <div className="mb-4 p-4 border rounded">
-                                <h3 className="text-lg font-semibold mb-2">Add Transaction</h3>
-                                <input type="text" placeholder="Customer Code" className="border p-2 mb-2 w-full" />
-                                <input type="text" placeholder="Customer Name" className="border p-2 mb-2 w-full" />
-                                <input type="text" placeholder="Transaction Label" className="border p-2 mb-2 w-full" />
-                                <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={() => {/* Logic to save transaction */}}>Save</button>
-                                <button className="bg-red-500 text-white px-4 py-2 rounded ml-2" onClick={() => setShowCreateTransactionForm(false)}>Cancel</button>
-                            </div>
-                        )}
-
-                        <table className="w-full table-auto">
-                            <thead>
-                                <tr className="bg-gray-200">
-                                    <th className="px-4 py-2 text-center">#</th>
-                                    <th className="px-4 py-2 text-center">Customer Code</th>
-                                    <th className="px-4 py-2 text-center">Customer Name</th>
-                                    <th className="px-4 py-2 text-center">Transaction Label</th>
-                                    <th className="px-4 py-2 text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {transactionData.length > 0 ? (
-                                    transactionData.map((item, index) => (
-                                        <tr key={item.id} className="border-b">
-                                            <td className="px-4 py-2 text-center">{index + 1}</td>
-                                            <td className="px-4 py-2 text-center">{item.customerCode}</td>
-                                            <td className="px-4 py-2 text-center">{item.customerName}</td>
-                                            <td className="px-4 py-2 text-center">{item.transactionLabel}</td>
-                                            <td className="px-4 py-2 text-center">
-                                                <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
-                                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="5" className="text-center py-4">No data available</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+        {showCreateProductForm && (
+            <div className="mb-4">
+                <input type="text" placeholder="Product Name" value={productName} onChange={(e) => setProductName(e.target.value)} className="border p-2 mb-2 w-full" />
+                <input type="number" placeholder="Product Price" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} className="border p-2 mb-2 w-full" />
+                <input type="text" placeholder="Product Type" value={productType} onChange={(e) => setProductType(e.target.value)} className="border p-2 mb-2 w-full" />
+                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateProduct}>Submit</button>
+                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateProductForm(false)}>Cancel</button>
             </div>
-        </div>
-    );
-}
+        )}
 
+        <table className="w-full table-auto">
+            <thead>
+                <tr className="bg-gray-200">
+                    <th className="px-4 py-2 text-center">#</th>
+                    <th className="px-4 py-2 text-center">Name</th>
+                    <th className="px-4 py-2 text-center">Price</th>
+                    <th className="px-4 py-2 text-center">Type</th>
+                    <th className="px-4 py-2 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {productData.length > 0 ? (
+                    productData.map((product, index) => (
+                        <tr key={product.id} className="border-b">
+                            <td className="px-4 py-2 text-center">{index + 1}</td>
+                            <td className="px-4 py-2 text-center">{product.name}</td>
+                            <td className="px-4 py-2 text-center">{product.price}</td>
+                            <td className="px-4 py-2 text-center">{product.type}</td>
+                            <td className="px-4 py-2 text-center">
+                                <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
+                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                            </td>
+                        </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan="5" className="px-4 py-2 text-center">No products found</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+)}
+
+{activeTab === 'transactions' && (
+    <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateTransactionForm(true)}>
+            Create Transaction
+        </button>
+
+        {showCreateTransactionForm && (
+            <div className="mb-4">
+                <select onChange={(e) => setTransactionProductId(e.target.value)} className="border p-2 mb-2 w-full">
+                    <option value="">Select Product</option>
+                    {productData.map(product => (
+                        <option key={product.id} value={product.id}>{product.name}</option>
+                    ))}
+                </select>
+                <select onChange={(e) => setTransactionCustomerId(e.target.value)} className="border p-2 mb-2 w-full">
+                    <option value="">Select Customer</option>
+                    {userData.map(user => (
+                        <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                </select>
+                <input type="number" placeholder="Quantity" value={transactionQuantity} onChange={(e) => setTransactionQuantity(e.target.value)} className="border p-2 mb-2 w-full" />
+                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateTransaction}>Submit</button>
+                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateTransactionForm(false)}>Cancel</button>
+            </div>
+        )}
+
+        <table className="w-full table-auto mt-4">
+            <thead>
+                <tr className="bg-gray-200">
+                    <th className="px-4 py-2 text-center">#</th>
+                    <th className="px-4 py-2 text-center">Kode Pelanggan</th>
+                    <th className="px-4 py-2 text-center">Nama Pelanggan</th>
+                    <th className="px-4 py-2 text-center">Label Transaksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {transactionData.length > 0 ? (
+                    transactionData.map((transaction, index) => (
+                        <tr key={transaction.id} className="border-b">
+                            <td className="px-4 py-2 text-center">{index + 1}</td>
+                            <td className="px-4 py-2 text-center">{transaction.customer.id || 'N/A'}</td>
+                            <td className="px-4 py-2 text-center">{transaction.customer.name || 'Customer Name'}</td>
+                            <td className="px-4 py-2 text-center">
+                            <Button onPress={onOpen}>Open Modal</Button>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false} isKeyboardDismissDisabled={true}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">Modal Title</ModalHeader>
+              <ModalBody>
+                <p> 
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  Nullam pulvinar risus non risus hendrerit venenatis.
+                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
+                </p>
+                <p>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  Nullam pulvinar risus non risus hendrerit venenatis.
+                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
+                </p>
+                <p>
+                  Magna exercitation reprehenderit magna aute tempor cupidatat consequat elit
+                  dolor adipisicing. Mollit dolor eiusmod sunt ex incididunt cillum quis. 
+                  Velit duis sit officia eiusmod Lorem aliqua enim laboris do dolor eiusmod. 
+                  Et mollit incididunt nisi consectetur esse laborum eiusmod pariatur 
+                  proident Lorem eiusmod et. Culpa deserunt nostrud ad veniam.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
+                  Close
+                </Button>
+                <Button color="primary" onPress={onClose}>
+                  Action
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+                            </td>
+                        </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan="4" className="px-4 py-2 text-center">No transactions found</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </div>
+)}
+
+
+
+
+
+
+        </div>
+    </div>
+);          
+}
 export default Admin;

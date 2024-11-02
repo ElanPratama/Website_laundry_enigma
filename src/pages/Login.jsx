@@ -1,6 +1,7 @@
 import { jwtDecode } from 'jwt-decode';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { axiosInstance } from '../lib/axios';
 
 function LoginAPI() {
   const [username, setUsername] = useState('');
@@ -11,54 +12,43 @@ function LoginAPI() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate(); // Untuk navigasi
 
-  const apiGet = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(false);
     setMessage('');
-  
+
     try {
-      const response = await fetch('http://localhost:8010/proxy/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Kesalahan HTTP! status: ${response.status}`);
+      const formattedBoddy = {
+        username: username,
+        password: password,
       }
-  
-      const json = await response.json();
-      console.log(json.data.token); // Lihat respons API
-      const decode = jwtDecode(json.data.token)
-      console.log({decode})
+      const { data } = await axiosInstance.post('/auth/login', formattedBoddy);
+      const token = data.data.token
+
+      const decode = jwtDecode(token)
+      console.log({ decode })
       console.log(decode.role)
-      console.log(json.data)
-      
-      // Simpan token dan peran
-        localStorage.setItem('token', json.data.token);
-        localStorage.setItem('role', decode.role);
-        
-        setMessage('Login berhasil!');
-        setSuccess(true);
-        navigate(decode.role === 'admin' ? '/admin' : '/employee'); // Alihkan berdasarkan peran
-       
-      
+
+      // // Simpan token dan peran
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', decode.role);
+
+      setMessage('Login berhasil!');
+      setSuccess(true);
+      navigate(decode.role === 'admin' ? '/admin' : '/employee'); // Alihkan berdasarkan peran
+
+
     } catch (error) {
-      console.error(error.message);
+      console.error(error.response);
       setMessage('Login gagal. Silakan coba lagi.');
       setError(true);
     } finally {
       setLoading(false);
     }
   };
-  
-  
+
+
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900">
@@ -66,7 +56,7 @@ function LoginAPI() {
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
           Masuk ke akun Anda
         </h1>
-        <form className="space-y-4 md:space-y-6" onSubmit={apiGet}>
+        <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
           <div>
             <label htmlFor="username" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Pengguna</label>
             <input
