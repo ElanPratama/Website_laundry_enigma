@@ -17,6 +17,7 @@ const ModalDetailTransaction = (props) => {
       // Set customer data and bill details
       setCustomer(data.data.customer);
       setDetailTransaction(data.data.billDetails || []);
+      console.log(detailTransaction)
     } catch (error) {
       console.error(error.response);
     }
