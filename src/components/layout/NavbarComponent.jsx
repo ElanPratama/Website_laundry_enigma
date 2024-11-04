@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Button } from "@nextui-org/react";
-import { AcmeLogo } from "./AcmeLogo.jsx";
+import { AcmeLogo } from "../AcmeLogo.jsx";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export default function NavbarComponent() {

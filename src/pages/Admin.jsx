@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../lib/axios';
-import { user } from '@nextui-org/react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import ModalDetailTransaction from '../components/ModalDetailTransaction';
+import { useEffect, useState } from 'react';
 
-function Admin() {
+
+const Admin = () => {
     const [userData, setUserData] = useState([]);
     const [productData, setProductData] = useState([]);
     const [transactionData, setTransactionData] = useState([]);
@@ -21,8 +23,11 @@ function Admin() {
     const [productPrice, setProductPrice] = useState('');
     const [productType, setProductType] = useState('');
     const [responseMessage, setResponseMessage] = useState(null);
-    const navigate = useNavigate();
     
+    const [showModalDetail, setShowModalDetail] = useState(false);
+    const [selectedTransactionId, setSelectedTransactionId] = useState(null);
+    const navigate = useNavigate();
+
 
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -140,7 +145,7 @@ function Admin() {
     };
 
     // Create a new transaction
-    
+
     const handleCreateTransaction = async () => {
         if (!transactionProductId || !transactionQuantity) {
             setResponseMessage('Please fill out all transaction fields.');
@@ -148,14 +153,14 @@ function Admin() {
         }
 
         try {
-            const body =  {
+            const body = {
                 customerId: transactionCustomerId,
-                billDetails:[
+                billDetails: [
                     {
-                        product : {
+                        product: {
                             id: transactionProductId,
                         },
-                        qty: Number(transactionQuantity),                    
+                        qty: Number(transactionQuantity),
                     }
                 ]
             }
@@ -163,7 +168,7 @@ function Admin() {
 
             const headers = { Authorization: `Bearer ${token}` };
             console.log(body)
-            const response = await axiosInstance.post('/bills', body , { headers });
+            const response = await axiosInstance.post('/bills', body, { headers });
 
             if (response.status === 201) {
                 setResponseMessage('Transaction created successfully!');
@@ -178,16 +183,19 @@ function Admin() {
         }
     };
 
-    // Navigate to transaction detail page
-    const handleTransactionDetail = (id) => {
-        navigate(`/transaction/${id}`);
-    };
+
 
     // Logout function
     function handleLogout() {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
         navigate('/');
+    }
+
+    const handleClickDetail = (id) => {
+        setSelectedTransactionId(id)
+        setShowModalDetail(true);
+        console.log('test', showModalDetail)
     }
 
     return (
@@ -263,157 +271,126 @@ function Admin() {
                     </div>
                 )}
 
-{activeTab === 'products' && (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateProductForm(true)}>Create Product</button>
+                {activeTab === 'products' && (
+                    <div className="bg-white p-4 rounded-lg shadow mb-6">
+                        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateProductForm(true)}>Create Product</button>
 
-        {showCreateProductForm && (
-            <div className="mb-4">
-                <input type="text" placeholder="Product Name" value={productName} onChange={(e) => setProductName(e.target.value)} className="border p-2 mb-2 w-full" />
-                <input type="number" placeholder="Product Price" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} className="border p-2 mb-2 w-full" />
-                <input type="text" placeholder="Product Type" value={productType} onChange={(e) => setProductType(e.target.value)} className="border p-2 mb-2 w-full" />
-                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateProduct}>Submit</button>
-                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateProductForm(false)}>Cancel</button>
-            </div>
-        )}
+                        {showCreateProductForm && (
+                            <div className="mb-4">
+                                <input type="text" placeholder="Product Name" value={productName} onChange={(e) => setProductName(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <input type="number" placeholder="Product Price" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <input type="text" placeholder="Product Type" value={productType} onChange={(e) => setProductType(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateProduct}>Submit</button>
+                                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateProductForm(false)}>Cancel</button>
+                            </div>
+                        )}
 
-        <table className="w-full table-auto">
-            <thead>
-                <tr className="bg-gray-200">
-                    <th className="px-4 py-2 text-center">#</th>
-                    <th className="px-4 py-2 text-center">Name</th>
-                    <th className="px-4 py-2 text-center">Price</th>
-                    <th className="px-4 py-2 text-center">Type</th>
-                    <th className="px-4 py-2 text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {productData.length > 0 ? (
-                    productData.map((product, index) => (
-                        <tr key={product.id} className="border-b">
-                            <td className="px-4 py-2 text-center">{index + 1}</td>
-                            <td className="px-4 py-2 text-center">{product.name}</td>
-                            <td className="px-4 py-2 text-center">{product.price}</td>
-                            <td className="px-4 py-2 text-center">{product.type}</td>
-                            <td className="px-4 py-2 text-center">
-                                <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
-                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-                            </td>
-                        </tr>
-                    ))
-                ) : (
-                    <tr>
-                        <td colSpan="5" className="px-4 py-2 text-center">No products found</td>
-                    </tr>
+                        <table className="w-full table-auto">
+                            <thead>
+                                <tr className="bg-gray-200">
+                                    <th className="px-4 py-2 text-center">#</th>
+                                    <th className="px-4 py-2 text-center">Name</th>
+                                    <th className="px-4 py-2 text-center">Price</th>
+                                    <th className="px-4 py-2 text-center">Type</th>
+                                    <th className="px-4 py-2 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {productData.length > 0 ? (
+                                    productData.map((product, index) => (
+                                        <tr key={product.id} className="border-b">
+                                            <td className="px-4 py-2 text-center">{index + 1}</td>
+                                            <td className="px-4 py-2 text-center">{product.name}</td>
+                                            <td className="px-4 py-2 text-center">{product.price}</td>
+                                            <td className="px-4 py-2 text-center">{product.type}</td>
+                                            <td className="px-4 py-2 text-center">
+                                                <button className="bg-blue-500 text-white px-2 py-1 rounded mr-2">Edit</button>
+                                                <button className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-4 py-2 text-center">No products found</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
-            </tbody>
-        </table>
-    </div>
-)}
 
-{activeTab === 'transactions' && (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateTransactionForm(true)}>
-            Create Transaction
-        </button>
+                {activeTab === 'transactions' && (
+                    <div className="bg-white p-4 rounded-lg shadow mb-6">
+                        <button className="bg-green-500 text-white px-4 py-2 rounded mb-4" onClick={() => setShowCreateTransactionForm(true)}>
+                            Create Transaction
+                        </button>
 
-        {showCreateTransactionForm && (
-            <div className="mb-4">
-                <select onChange={(e) => setTransactionProductId(e.target.value)} className="border p-2 mb-2 w-full">
-                    <option value="">Select Product</option>
-                    {productData.map(product => (
-                        <option key={product.id} value={product.id}>{product.name}</option>
-                    ))}
-                </select>
-                <select onChange={(e) => setTransactionCustomerId(e.target.value)} className="border p-2 mb-2 w-full">
-                    <option value="">Select Customer</option>
-                    {userData.map(user => (
-                        <option key={user.id} value={user.id}>{user.name}</option>
-                    ))}
-                </select>
-                <input type="number" placeholder="Quantity" value={transactionQuantity} onChange={(e) => setTransactionQuantity(e.target.value)} className="border p-2 mb-2 w-full" />
-                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateTransaction}>Submit</button>
-                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateTransactionForm(false)}>Cancel</button>
-            </div>
-        )}
+                        {showCreateTransactionForm && (
+                            <div className="mb-4">
+                                <select onChange={(e) => setTransactionProductId(e.target.value)} className="border p-2 mb-2 w-full">
+                                    <option value="">Select Product</option>
+                                    {productData.map(product => (
+                                        <option key={product.id} value={product.id}>{product.name}</option>
+                                    ))}
+                                </select>
+                                <select onChange={(e) => setTransactionCustomerId(e.target.value)} className="border p-2 mb-2 w-full">
+                                    <option value="">Select Customer</option>
+                                    {userData.map(user => (
+                                        <option key={user.id} value={user.id}>{user.name}</option>
+                                    ))}
+                                </select>
+                                <input type="number" placeholder="Quantity" value={transactionQuantity} onChange={(e) => setTransactionQuantity(e.target.value)} className="border p-2 mb-2 w-full" />
+                                <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2" onClick={handleCreateTransaction}>Submit</button>
+                                <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setShowCreateTransactionForm(false)}>Cancel</button>
+                            </div>
+                        )}
 
-        <table className="w-full table-auto mt-4">
-            <thead>
-                <tr className="bg-gray-200">
-                    <th className="px-4 py-2 text-center">#</th>
-                    <th className="px-4 py-2 text-center">Kode Pelanggan</th>
-                    <th className="px-4 py-2 text-center">Nama Pelanggan</th>
-                    <th className="px-4 py-2 text-center">Label Transaksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                {transactionData.length > 0 ? (
-                    transactionData.map((transaction, index) => (
-                        <tr key={transaction.id} className="border-b">
-                            <td className="px-4 py-2 text-center">{index + 1}</td>
-                            <td className="px-4 py-2 text-center">{transaction.customer.id || 'N/A'}</td>
-                            <td className="px-4 py-2 text-center">{transaction.customer.name || 'Customer Name'}</td>
-                            <td className="px-4 py-2 text-center">
-                            <Button onPress={onOpen}>Open Modal</Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={false} isKeyboardDismissDisabled={true}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">Modal Title</ModalHeader>
-              <ModalBody>
-                <p> 
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Nullam pulvinar risus non risus hendrerit venenatis.
-                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                </p>
-                <p>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Nullam pulvinar risus non risus hendrerit venenatis.
-                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                </p>
-                <p>
-                  Magna exercitation reprehenderit magna aute tempor cupidatat consequat elit
-                  dolor adipisicing. Mollit dolor eiusmod sunt ex incididunt cillum quis. 
-                  Velit duis sit officia eiusmod Lorem aliqua enim laboris do dolor eiusmod. 
-                  Et mollit incididunt nisi consectetur esse laborum eiusmod pariatur 
-                  proident Lorem eiusmod et. Culpa deserunt nostrud ad veniam.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Close
-                </Button>
-                <Button color="primary" onPress={onClose}>
-                  Action
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-    </>
-  );
-}
-                            </td>
-                        </tr>
-                    ))
-                ) : (
-                    <tr>
-                        <td colSpan="4" className="px-4 py-2 text-center">No transactions found</td>
-                    </tr>
+                        <table className="w-full table-auto mt-4">
+                            <thead>
+                                <tr className="bg-gray-200">
+                                    <th className="px-4 py-2 text-center">#</th>
+                                    <th className="px-4 py-2 text-center">Kode Pelanggan</th>
+                                    <th className="px-4 py-2 text-center">Nama Pelanggan</th>
+                                    <th className="px-4 py-2 text-center">Label Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {transactionData.length > 0 ? (
+                                    transactionData.map((transaction, index) => (
+                                        <tr key={transaction.id} className="border-b">
+                                            <td className="px-4 py-2 text-center">{index + 1}</td>
+                                            <td className="px-4 py-2 text-center">{transaction.customer.id || 'N/A'}</td>
+                                            <td className="px-4 py-2 text-center">{transaction.customer.name || 'Customer Name'}</td>
+                                            <td className="px-4 py-2 text-center">
+                                                <Button
+                                                    className="bg-blue-500 text-white px-2 py-1 rounded ml-2"
+                                                    onPress={() => handleClickDetail(transaction.id)}>
+                                                    Detail
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4" className="px-4 py-2 text-center">No transactions found</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                        <div>
+                            <Modal isOpen={showModalDetail} onClose={() => setShowModalDetail(false)}>
+                                <ModalDetailTransaction id={selectedTransactionId} />
+                            </Modal>
+                        </div>
+                    </div>
+
+
                 )}
-            </tbody>
-        </table>
-    </div>
-)}
 
 
-
-
-
+            </div>
 
         </div>
-    </div>
-);          
+    );
 }
 export default Admin;

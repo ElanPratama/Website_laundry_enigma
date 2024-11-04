@@ -1,47 +1,82 @@
-import {Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure} from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
+import { useEffect, useState } from "react";
+import { axiosInstance } from "../lib/axios";
 
-export default function App() {
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
+const ModalDetailTransaction = (props) => {
+  const [detailTransaction, setDetailTransaction] = useState([]);
+  const [customer, setCustomer] = useState(null);
+
+  const token = localStorage.getItem("token");
+
+  const fetchDetailTransaction = async () => {
+    try {
+      const { id } = props;
+      const headers = { Authorization: `Bearer ${token}` };
+      const { data } = await axiosInstance.get(`/bills/${id}`, { headers });
+      
+      // Set customer data and bill details
+      setCustomer(data.data.customer);
+      setDetailTransaction(data.data.billDetails || []);
+    } catch (error) {
+      console.error(error.response);
+    }
+  };
+
+  useEffect(() => {
+    fetchDetailTransaction();
+  }, [props.id]);
 
   return (
     <>
-      <Button onPress={onOpen}>Open Modal</Button>
-      <Modal isOpen={isOpen}>
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">Modal Title</ModalHeader>
-              <ModalBody>
-                <p> 
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Nullam pulvinar risus non risus hendrerit venenatis.
-                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                </p>
-                <p>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  Nullam pulvinar risus non risus hendrerit venenatis.
-                  Pellentesque sit amet hendrerit risus, sed porttitor quam.
-                </p>
-                <p>
-                  Magna exercitation reprehenderit magna aute tempor cupidatat consequat elit
-                  dolor adipisicing. Mollit dolor eiusmod sunt ex incididunt cillum quis. 
-                  Velit duis sit officia eiusmod Lorem aliqua enim laboris do dolor eiusmod. 
-                  Et mollit incididunt nisi consectetur esse laborum eiusmod pariatur 
-                  proident Lorem eiusmod et. Culpa deserunt nostrud ad veniam.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Close
-                </Button>
-                <Button color="primary" onPress={onClose}>
-                  Action
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col gap-1">Transaction Details</ModalHeader>
+            <ModalBody>
+              {customer && (
+                <div className="mb-4">
+                  <p><strong>Kode Pelanggan:</strong> {customer.id}</p>
+                  <p><strong>Nama:</strong> {customer.name}</p>
+                </div>
+              )}
+              {detailTransaction.length > 0 ? (
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left">Select Product</th>
+                      <th className="px-4 py-2 text-left">Qty</th>
+                      <th className="px-4 py-2 text-left">Price</th>
+                      <th className="px-4 py-2 text-left">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailTransaction.map((transaction, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="px-4 py-2 text-center">{transaction.product.name || 'N/A'}</td>
+                        <td className="px-4 py-2 text-center">{transaction.qty || '0'}</td>
+                        <td className="px-4 py-2 text-center">{transaction.price || '0'}</td>
+                        <td className="px-4 py-2 text-center">{transaction.qty * transaction.price || '0'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="px-4 py-2 text-center">No transactions found</div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button color="danger" variant="light" onPress={onClose}>
+                Close
+              </Button>
+              <Button color="primary" onPress={onClose}>
+                Action
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
     </>
   );
-}
+};
+
+export default ModalDetailTransaction;

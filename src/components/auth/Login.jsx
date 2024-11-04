@@ -1,7 +1,7 @@
 import { jwtDecode } from 'jwt-decode';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { axiosInstance } from '../lib/axios';
+import { axiosInstance } from '../../lib/axios';
 
 function LoginAPI() {
   const [username, setUsername] = useState('');
