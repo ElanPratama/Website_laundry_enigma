@@ -1,26 +1,29 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Layout Components
 import NavbarComponent from './components/layout/NavbarComponent';
-import Home from './pages/Home';         // Pastikan Home diimpor dari jalur yang benar
-import LoginAPI from '../src/components/auth/Login';    // Impor halaman LoginAPI
-import SignUp from '../src/components/auth/SignUp';
-import Admin from './pages/Admin';
-import Employee from './pages/Employee';
-import FooterComponent from '../src/components/layout/FooterComponent';
+import FooterComponent from './components/layout/FooterComponent';
+
+// Pages
+import Home from './pages/Home';  // Ensure the path is correct
+import LoginAPI from './components/auth/Login';  // Login Page
+import SignUp from './components/auth/SignUp';  // Sign Up Page
+import Admin from './pages/Admin';  // Admin Page
+import Employee from './pages/Employee';  // Employee Page
 
 function App() {
   return (
     <Router>
-      <NavbarComponent />  {/* Komponen Navbar selalu ditampilkan */}
+      <NavbarComponent />  {/* Navbar is always displayed */}
       <Routes>
-        <Route path="/" element={<Home />} />  {/* Rute untuk halaman Home */}
-        <Route path="/login" element={<LoginAPI />} />  {/* Rute untuk halaman Login */}
-        <Route path="/signup" element={<SignUp />} />  {/* Rute untuk halaman SignUp */}
-        <Route path="/admin" element={<Admin />} />  {/* Rute untuk halaman Admin */}
-        <Route path="/employee" element={<Employee />} />  {/* Rute untuk halaman Employee */}
+        <Route path="/" element={<Home />} />  {/* Route for Home page */}
+        <Route path="/login" element={<LoginAPI />} />  {/* Route for Login page */}
+        <Route path="/signup" element={<SignUp />} />  {/* Route for Sign Up page */}
+        <Route path="/admin" element={<Admin />} />  {/* Route for Admin page */}
+        <Route path="/employee" element={<Employee />} />  {/* Route for Employee page */}
       </Routes>
-      <FooterComponent />  {/* Komponen Footer selalu ditampilkan */}
-      
+      <FooterComponent />  {/* Footer is always displayed */}
     </Router>
   );
 }
